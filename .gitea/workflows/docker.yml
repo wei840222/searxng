@@ -27,7 +27,7 @@ jobs:
           python-version: "3.14"
 
       - name: Generate version_frozen.py
-        run: python -m searx.version freeze
+        run: python ./searx/version.py freeze
 
       - name: Install Trivy
         env:
