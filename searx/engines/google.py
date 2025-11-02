@@ -14,6 +14,7 @@ engines:
 import typing as t
 
 import re
+import os
 import random
 import string
 import time
@@ -53,6 +54,9 @@ max_page = 50
 """
 time_range_support = True
 safesearch = True
+
+cse_id = os.getenv("SEARXNG_GOOGLE_CSE_ID", None)  # Custom Search Engine ID, if None normal google search is used
+api_key = os.getenv("SEARXNG_GOOGLE_API_KEY", None)  # API key for Custom Search Engine
 
 time_range_dict = {'day': 'd', 'week': 'w', 'month': 'm', 'year': 'y'}
 
@@ -262,6 +266,9 @@ def get_google_info(params: "OnlineParams", eng_traits: EngineTraits) -> dict[st
     # HTTP headers
 
     ret_val['headers']['Accept'] = '*/*'
+    ret_val['headers']['Accept-Language'] = lang_code
+    if len(lang_code.split('-')) > 1:
+        ret_val['headers']['Accept-Language'] = f'{lang_code},{lang_code.split("-")[0]};q=0.9,*;q=0.5'
 
     # Cookies
 
@@ -283,6 +290,27 @@ def request(query: str, params: "OnlineParams") -> None:
     start = (params['pageno'] - 1) * 10
     str_async = ui_async(start)
     google_info = get_google_info(params, traits)
+    
+
+    if cse_id and api_key:
+        query_params = {
+            'cx': cse_id,
+            'key': api_key,
+            'q': query,
+            'start': start + 1,  # CSE API is 1-based index
+            'num': 10,
+            'lr': google_info['language'],
+            'cr': google_info['country'],
+            'safe': 'off' if params['safesearch'] == 0 else 'active',
+        }
+        if params['time_range'] in time_range_dict:
+            query_params['dateRestrict'] = time_range_dict[params['time_range']]+'1'  # e.g. d1, w1, m1, y1
+
+        params['url'] = 'https://www.googleapis.com/customsearch/v1?' + urlencode(query_params)
+        params['headers'].update(google_info['headers'])
+
+        return 
+    
     logger.debug("ARC_ID: %s", str_async)
 
     # https://www.google.de/search?q=corona&hl=de&lr=lang_de&start=0&tbs=qdr%3Ad&safe=medium
@@ -347,6 +375,17 @@ def parse_data_images(text: str):
 def response(resp: "SXNG_Response"):
     """Get response from google's search request"""
     # pylint: disable=too-many-branches, too-many-statements
+
+    if cse_id and api_key:
+        data = resp.json()
+
+        results = EngineResults()
+        for item in data.get('items', []):
+            results.append({'title': item['title'], 'url': item['link'], 'content': item['snippet']})
+        results.append({'number_of_results': int(data['searchInformation']['totalResults'] or 0)})
+
+        return results
+
     detect_google_sorry(resp)
     data_image_map = parse_data_images(resp.text)
 
