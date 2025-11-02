@@ -18,8 +18,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     find ./.venv/lib/ -type d -name "__pycache__" -exec rm -rf {} +; \
     find ./.venv/lib/ -type f -name "*.pyc" -delete; \
     python -m compileall -q -f -j 0 --invalidation-mode=unchecked-hash ./.venv/lib/; \
-    find ./.venv/lib/python*/site-packages/*.dist-info/ -type f -name "RECORD" -exec sort -t, -k1,1 -o {} {} \;; \
-    uv run python -m searx.version freeze
+    find ./.venv/lib/python*/site-packages/*.dist-info/ -type f -name "RECORD" -exec sort -t, -k1,1 -o {} {} \;;
 
 FROM python:3.14.0-slim-trixie
 
