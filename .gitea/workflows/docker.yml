@@ -45,6 +45,10 @@ jobs:
           severity: CRITICAL,HIGH,MEDIUM
           ignore-unfixed: true
           exit-code: 0
+      
+      - name: Setup Docker Context for Buildx
+        run: |
+          docker context create builders || docker context use builders
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3.11.1

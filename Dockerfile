@@ -65,4 +65,4 @@ ENV PATH="/usr/local/searxng/.venv/bin:$PATH"
 EXPOSE 8888
 
 ENTRYPOINT ["gunicorn"]
-CMD ["--workers=4", "--worker-class=gevent", "--threads=4", "--bind=0.0.0.0:8888", "searx.webapp:app"]
+CMD ["--workers=2", "--worker-class=gevent", "--threads=8", "--bind=0.0.0.0:8888", "searx.webapp:app"]
